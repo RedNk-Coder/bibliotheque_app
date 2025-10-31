@@ -7,31 +7,44 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      # --- Récupérer le dépôt ---
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.13"
+      # --- Configurer Python 3.11 ---
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip python3-venv build-essential git zip unzip openjdk-11-jdk
-        pip install --upgrade pip
-        pip install buildozer
+      # --- Installer les dépendances système et Buildozer ---
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip python3-venv python3-dev git openjdk-17-jdk unzip zlib1g-dev libncurses5 libffi-dev libssl-dev
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer cython python-for-android
 
-    - name: Build APK
-      run: |
-        buildozer -v android debug
+      # --- Vérifier Buildozer ---
+      - name: Check Buildozer version
+        run: buildozer --version
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: APK
-        path: bin/*.apk
+      # --- Construire l’APK Android en debug ---
+      - name: Build APK
+        run: |
+          buildozer android debug
+
+      # --- Lister les fichiers créés ---
+      - name: List APK
+        run: ls -lh bin/
+
+      # --- Upload APK comme artefact GitHub ---
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: APK
+          path: bin/*.apk
