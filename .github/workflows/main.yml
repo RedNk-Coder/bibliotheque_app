@@ -10,36 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # --- Installer outils essentiels ---
       - name: Installer les outils de base
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-venv python3-pip openjdk-17-jdk git unzip tar build-essential curl wget
+          sudo apt-get install -y python3 python3-venv python3-pip openjdk-17-jdk git unzip tar build-essential curl wget libffi-dev
 
-      # --- Checkout du dépôt ---
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- Créer environnement Python ---
       - name: Configurer Python venv
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools wheel
           pip install buildozer
 
-      # --- Nettoyer Buildozer ---
-      - name: Nettoyer buildozer
+      - name: Nettoyer Buildozer
         run: |
           source .venv/bin/activate
           buildozer android clean
 
-      # --- Générer APK ---
       - name: Générer APK debug
         run: |
           source .venv/bin/activate
+          pip install setuptools
           buildozer android debug
 
-      # --- Lister fichiers APK générés ---
-      - name: Lister APK
+      - name: Lister APK généré
         run: ls -lh bin/
+
+      - name: Upload APK (artefact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BibliothequeApp-APK
+          path: bin/*.apk
