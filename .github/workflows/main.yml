@@ -21,7 +21,7 @@ jobs:
       - name: Installer Python-for-Android (p4a)
         run: |
           python3 -m pip install --upgrade pip
-          pip install python-for-android==2024.7.2
+          pip install python-for-android==2024.1.21
 
       - name: Construire l'APK avec p4a
         run: |
@@ -33,8 +33,6 @@ jobs:
             --version 1.0 \
             --bootstrap sdl2 \
             --requirements=python3,kivy \
-            --sdk-dir $HOME/.android/sdk \
-            --ndk-dir $HOME/.android/ndk \
             --android-api 33 \
             --arch=armeabi-v7a \
             --output-filename BibliothequeApp.apk
