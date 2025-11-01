@@ -1,61 +1,73 @@
-name: Build APK with Buildozer
+name: Build APK Android Bibliotheque Pro
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-android:
+  build:
     runs-on: ubuntu-latest
 
-    steps:
-      # --- Cloner le dépôt ---
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    env:
+      ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      PATH: ${{ github.workspace }}/.venv/bin:${{ github.workspace }}/android-sdk/cmdline-tools/latest/bin:${{ github.workspace }}/android-sdk/platform-tools:$PATH
 
-      # --- Installer Python ---
-      - name: Setup Python
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
           python-version: 3.13
 
-      # --- Installer dépendances système ---
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-virtualenv zip unzip openjdk-17-jdk build-essential git wget curl
+          sudo apt-get install -y python3-venv python3-pip python3.13-distutils zip unzip openjdk-17-jdk build-essential git wget curl
 
-      # --- Configurer Buildozer et venv ---
-      - name: Setup Buildozer
+      - name: Create virtual environment
+        run: python3 -m venv .venv
+
+      - name: Activate virtual environment and upgrade pip
         run: |
-          python3 -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip
-          pip install buildozer cython
+          python -m pip install --upgrade pip setuptools wheel
 
-      # --- Installer Android SDK & NDK ---
-      - name: Install Android SDK & NDK
+      - name: Install Buildozer & Cython & Kivy
         run: |
-          ANDROID_HOME="$HOME/android-sdk"
+          source .venv/bin/activate
+          pip install buildozer cython kivy==2.1.0
+
+      - name: Install Android SDK Command-line Tools
+        run: |
           mkdir -p $ANDROID_HOME/cmdline-tools
           cd $ANDROID_HOME/cmdline-tools
           wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
           unzip cmdline-tools.zip
           mv cmdline-tools latest
+          rm cmdline-tools.zip
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
-      # --- Build APK ---
-      - name: Build APK
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
+      - name: Clean previous build
         run: |
           source .venv/bin/activate
           buildozer android clean
+
+      - name: Build APK
+        run: |
+          source .venv/bin/activate
           buildozer android debug
 
-      # --- Upload APK ---
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: BibliothequePro-APK
