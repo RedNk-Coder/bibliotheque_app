@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK (p4a direct)
 
 on:
   push:
@@ -10,37 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Installer les outils de base
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-venv python3-pip openjdk-17-jdk git unzip tar build-essential curl wget libffi-dev
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configurer Python venv
+      - name: Installer dépendances Android
         run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install buildozer
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk python3 python3-pip git unzip zip wget curl build-essential ccache
 
-      - name: Nettoyer Buildozer
+      - name: Installer Python-for-Android (p4a)
         run: |
-          source .venv/bin/activate
-          buildozer android clean
+          python3 -m pip install --upgrade pip
+          pip install python-for-android==2024.7.2
 
-      - name: Générer APK debug
+      - name: Construire l'APK avec p4a
         run: |
-          source .venv/bin/activate
-          pip install setuptools
-          buildozer android debug
+          mkdir -p dist
+          p4a apk \
+            --private . \
+            --package org.bibliotheque.app \
+            --name "BibliothequeApp" \
+            --version 1.0 \
+            --bootstrap sdl2 \
+            --requirements=python3,kivy \
+            --sdk-dir $HOME/.android/sdk \
+            --ndk-dir $HOME/.android/ndk \
+            --android-api 33 \
+            --arch=armeabi-v7a \
+            --output-filename BibliothequeApp.apk
 
-      - name: Lister APK généré
-        run: ls -lh bin/
-
-      - name: Upload APK (artefact)
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: BibliothequeApp-APK
-          path: bin/*.apk
+          name: BibliothequeApp
+          path: BibliothequeApp.apk
